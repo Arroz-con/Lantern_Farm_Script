@@ -1,0 +1,164 @@
+if game.PlaceId == 920587237 then
+	repeat task.wait() until game:IsLoaded()
+    local PlayerAmount = game.Players:GetPlayers()
+	local Player = game.Players.LocalPlayer
+    local VirtualUser = game:GetService("VirtualUser")
+	local NewsAppConnection
+	local DialogConnection
+	local DailyClaimConnection
+	local ChatConnection
+	local DailyBoolean = true
+	local DailyRewardTable = {[9] = "reward_1", [30] = "reward_2", [90] = "reward_3", [140] = "reward_4", [180] = "reward_5", [210] = "reward_6", [230] = "reward_7",
+	[280] = "reward_8", [300] = "reward_9", [320] = "reward_10", [360] = "reward_11", [400] = "reward_12", [460] = "reward_13", [500] = "reward_14",
+	[550] = "reward_15", [600] = "reward_16", [660] = "reward_17"}
+	local DailyRewardTable2 = {[9] = "reward_1", [65] = "reward_2", [120] = "reward_3", [180] = "reward_4", [225] = "reward_5", [280] = "reward_6", [340] = "reward_7",
+    [400] = "reward_8", [450] = "reward_9", [520] = "reward_10", [600] = "reward_11", [660] = "reward_12"}
+	
+	Player.PlayerGui:WaitForChild("NewsApp")
+	local Bypass = require(game.ReplicatedStorage:WaitForChild("Fsys")).load
+	local ClaimRemote = Bypass("RouterClient").get("QuestAPI/ClaimQuest")
+	local RerollRemote = Bypass("RouterClient").get("QuestAPI/RerollQuest")
+	
+    if #PlayerAmount > 3 then
+        game:Shutdown()
+    end
+
+    Player.Idled:connect(
+    function()
+        VirtualUser:ClickButton2(Vector2.new())
+    end)
+
+    for i,v in pairs(getconnections(Player.Idled)) do
+        v:Disable()
+    end
+
+	NewsAppConnection = Player.PlayerGui.NewsApp:GetPropertyChangedSignal("Enabled"):Connect(function()
+		if Player.PlayerGui.NewsApp.Enabled then
+			task.wait()
+			firesignal(Player.PlayerGui.NewsApp.EnclosingFrame.MainFrame.Contents.PlayButton.MouseButton1Click)
+			NewsAppConnection:Disconnect()
+		end
+	end)
+
+	DialogConnection = Player.PlayerGui.DialogApp:GetPropertyChangedSignal("Enabled"):Connect(function()
+		if Player.PlayerGui.DialogApp.Enabled then
+			repeat task.wait() until not Player.PlayerGui.NewsApp.Enabled
+			if Player.PlayerGui.DialogApp.Dialog.RoleChooserDialog.Visible then
+				firesignal(Player.PlayerGui.DialogApp.Dialog.RoleChooserDialog.Baby.MouseButton1Click)
+			elseif Player.PlayerGui.DialogApp.Dialog.GamepassDialog.Visible then
+				for i, v in pairs(Player.PlayerGui.DialogApp.Dialog.GamepassDialog.Buttons:GetDescendants()) do
+					if v.Name == "TextLabel" then
+						if  v.Text == "No thanks" then
+							firesignal(v.Parent.Parent.MouseButton1Click)
+							DailyBoolean = false
+							DialogConnection:Disconnect()
+						end
+					end
+				end
+			end
+		end
+	end)
+
+    local function GrabDailyReward()
+        local Daily = Bypass("ClientData").get("daily_login_manager")
+		if Daily.prestige == 0 then
+			for i, v in pairs(DailyRewardTable) do
+				if i < Daily.stars or i == Daily.stars then
+					if not Daily.claimed_star_rewards[v] then
+						Bypass("RouterClient").get("DailyLoginAPI/ClaimStarReward"):InvokeServer(v)
+					end
+				end
+			end
+		elseif Daily.prestige == 1 then
+			for i, v in pairs(DailyRewardTable2) do
+				if i < Daily.stars or i == Daily.stars then
+					if not Daily.claimed_star_rewards[v] then
+						Bypass("RouterClient").get("DailyLoginAPI/ClaimStarReward"):InvokeServer(v)
+					end
+				end
+			end
+		end
+    end
+
+	ChatConnection = Player.PlayerGui.Chat.Frame.ChatChannelParentFrame["Frame_MessageLogDisplay"].Scroller.DescendantAdded:Connect(function(ChatChild)
+		if ChatChild.Name == "TextButton" then
+			firesignal(Player.PlayerGui.TopbarApp.TopBarContainer.ChatVisible.MouseButton1Click)
+			ChatConnection:Disconnect()
+		end
+	end)
+
+	Player.CharacterAdded:Wait()
+
+    DailyClaimConnection = Player.PlayerGui.DailyLoginApp:GetPropertyChangedSignal("Enabled"):Connect(function()
+        repeat task.wait() until not DailyBoolean
+        if Player.PlayerGui.DailyLoginApp.Enabled then
+            task.wait()
+            if Player.PlayerGui.DailyLoginApp.Frame.Visible then
+                for i, v in pairs(Player.PlayerGui.DailyLoginApp.Frame.Body.Buttons:GetDescendants()) do
+                    if v.Name == "TextLabel" then
+                        if v.Text == "CLOSE" then
+                            firesignal(v.Parent.Parent.MouseButton1Click)
+                            task.wait(1)
+                            GrabDailyReward()
+                            DailyClaimConnection:Disconnect()
+                        elseif v.Text == "CLAIM!" then
+                            firesignal(v.Parent.Parent.MouseButton1Click) --claim button
+							firesignal(v.Parent.Parent.MouseButton1Click) --close button
+                            task.wait(1)
+                            GrabDailyReward()
+                            DailyClaimConnection:Disconnect()
+                        end
+                    end
+                end
+            end
+        end
+    end)
+end
+
+wait(5)
+
+
+local lanternhunt = require(game:GetService("ReplicatedStorage").ClientModules.Game.Minigames.LanternHuntClient)
+local Players = game:GetService("Players")
+local Player = Players.LocalPlayer
+local Bypass = require(game.ReplicatedStorage:WaitForChild("Fsys")).load
+local Remote = Bypass("RouterClient").get("HousingAPI/ActivateFurniture")
+local getLanterns = false
+local findteleportapp = true
+
+
+Player.PlayerGui:WaitForChild("DialogApp")
+
+
+task.spawn(function()
+    while task.wait(1) do
+        for i, v in pairs(Bypass("ClientData").get("char_wrapper")["ailments_monitor"]["ailments"]) do
+            if v["id"] == v["id"] then
+                Bypass("RouterClient").get("MonitorAPI/AddRate"):InvokeServer(v["id"], 100)
+            end
+        end
+    end
+end)
+
+task.spawn(function()
+    while findteleportapp == true do
+        task.wait(2)
+        for i, v in pairs(Player.PlayerGui.DialogApp:GetDescendants()) do
+            if v.Name == "TextLabel" then
+                if  v.Text == "Yes" then
+                    firesignal(v.Parent.Parent.MouseButton1Click)
+                end
+            end
+        end
+    end
+end)
+task.spawn(function()
+    while task.wait(5) do
+        for i,v in pairs(game:GetService("Workspace"):GetChildren()) do
+            if v.Name == "LanternAsset" then
+                firetouchinterest(game.Players.LocalPlayer.Character.HumanoidRootPart, v.HumanoidRootPart, 0)
+                task.wait(0.2)
+            end
+        end
+    end
+end)
